@@ -1,19 +1,59 @@
-version: '3.8'
-
 services:
   bpf-asset-management:
-    build: .
-    container_name: bpf-ac-system
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: bpf-asset-system
     restart: unless-stopped
     ports:
-      - "8501:8501"  # Local port:Container port
+      - "8501:8501"
     volumes:
-      # Mount database file untuk persistensi data
       - ./data:/app/data
-      # Optional: mount config files
       - ./config:/app/config
+      - ./logs:/app/logs
     environment:
-      - TZ=Asia/Jakarta  # Set timezone to Jakarta
+      - TZ=Asia/Jakarta
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - DOCKER_ENV=true
+      # User credentials (change in production)
+      - BPF_USERS={"admin":{"password":"8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918","role":"admin"},"teknisi":{"password":"6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090","role":"teknisi"},"manager":{"password":"1a8465a4c4b4d4a6b3b6b5c5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f","role":"manager"},"demo":{"password":"2a97516c354b68848cdbd8f54a226a0a55b21ed138e207ad6c5cbb9c00aa5aea","role":"viewer"}}
+    networks:
+      - bpf-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Optional: Add backup service
+  backup:
+    image: alpine:latest
+    container_name: bpf-backup
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ./backups:/backups
+    environment:
+      - TZ=Asia/Jakarta
+    command: |
+      sh -c '
+      while true; do
+        echo "Creating backup..."
+        cp /data/*.db /backups/backup_$$(date +%Y%m%d_%H%M%S).db 2>/dev/null || true
+        find /backups -name "*.db" -mtime +30 -delete 2>/dev/null || true
+        sleep 86400
+      done'
     networks:
       - bpf-network
 

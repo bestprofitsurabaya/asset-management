@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  bpf-asset-management:
+    build: .
+    container_name: bpf-ac-system
+    restart: unless-stopped
+    ports:
+      - "8501:8501"  # Local port:Container port
+    volumes:
+      # Mount database file untuk persistensi data
+      - ./data:/app/data
+      # Optional: mount config files
+      - ./config:/app/config
+    environment:
+      - TZ=Asia/Jakarta  # Set timezone to Jakarta
+    networks:
+      - bpf-network
+
+networks:
+  bpf-network:
+    driver: bridge

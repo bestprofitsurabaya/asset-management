@@ -1,37 +1,47 @@
 #!/bin/bash
 
-# Script untuk deploy aplikasi BPF Asset Management
+echo "========================================="
+echo "?? BPF Asset Management System Deployment"
+echo "========================================="
 
-echo "?? Starting BPF Asset Management System Deployment..."
+# Create required directories
+echo "?? Membuat direktori yang diperlukan..."
+mkdir -p data config logs data/backups
 
-# Buat direktori yang diperlukan
-mkdir -p data
-mkdir -p config
+# Set permissions
+echo "?? Mengatur permissions..."
+chmod -R 755 data config logs
 
-# Set permission
-chmod 755 data
+# Stop existing containers if any
+echo "?? Menghentikan container yang sedang berjalan..."
+docker-compose down 2>/dev/null || true
 
-# Build dan jalankan container
-echo "?? Building Docker image..."
-docker-compose build
+# Build and start containers
+echo "??? Membangun dan menjalankan container..."
+docker-compose up -d --build
 
-# Stop container lama jika ada
-echo "?? Stopping old container..."
-docker-compose down
-
-# Jalankan container baru
-echo "?? Starting new container..."
-docker-compose up -d
-
-# Cek status
-echo "? Checking container status..."
-docker-compose ps
-
-# Tampilkan logs
-echo "?? Recent logs:"
-docker-compose logs --tail=20
-
-echo ""
-echo "?? Aplikasi berjalan di: http://localhost:8501"
-echo "?? Untuk melihat logs: docker-compose logs -f"
-echo "?? Untuk stop: docker-compose down"
+# Check if container is running
+sleep 5
+if docker ps | grep -q "bpf-asset-system"; then
+    echo ""
+    echo "========================================="
+    echo "? DEPLOYMENT BERHASIL!"
+    echo "========================================="
+    echo ""
+    echo "?? Akses aplikasi di: http://$(hostname -I | awk '{print $1}'):8501"
+    echo ""
+    echo "?? Default Credentials:"
+    echo "   - Admin    : admin / admin123"
+    echo "   - Teknisi  : teknisi / teknisi123"
+    echo "   - Manager  : manager / manager123"
+    echo "   - Demo     : demo / demo123"
+    echo ""
+    echo "?? Perintah Berguna:"
+    echo "   - Lihat log    : docker-compose logs -f"
+    echo "   - Stop service : docker-compose down"
+    echo "   - Restart      : docker-compose restart"
+    echo "   - Status       : docker-compose ps"
+    echo "========================================="
+else
+    echo "? Deployment gagal. Cek log dengan: docker-compose logs"
+fi
